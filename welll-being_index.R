@@ -3,7 +3,6 @@ pacman::p_load(tidyverse, readxl, magrittr, openxlsx)
 
 
 # import data -------------------------------------------------------------
-
 bns <- read_excel("G:/My Drive/Data/BAF/BNS/ke_BNS_analysis_2023/ke_BNS_survey_NEW_-_all_versions_-_False_-_2024-02-06-08-39-40.xlsx") %>% 
   rename(household_ID = "_id")
 
@@ -49,22 +48,22 @@ bns.clean <- pivot_longer(bns_1,
                                              "playground_", "mill_", "transport_", "toilet_", "broom_", "mattress_", 
                                              "pot_", "electricity_", "fan_", "freezer_", "pipedwater_", "roof_", "radio_", 
                                              "tv_", "dishes_", "ironbox_", "phone_", "phone2_", "phone2_")),
-                        names_to = c("commodity", ".value"),
+                        names_to = c("item", ".value"),
                         names_sep = "_")  
 
  # Calculate weight of each item separately 
 bns.clean_1 <- bns.clean %>%
-  group_by(commodity) %>% 
-  summarise(weighting = sum(possess=='yes')/n())
+  group_by(item) %>% 
+  summarise(weighting = sum(necessary=='yes')/n())
   
-# match up the weightings for the various commodities
-bns.clean_2 <- merge(bns.clean, bns.clean_1, by = "commodity") %>% 
+# match up the weightings for the various items
+bns.clean_2 <- merge(bns.clean, bns.clean_1, by = "item") %>% 
   select(2:8, 1,9:11)
 
 # calculate the well-being score for each commodity for each household
 bns.summary.hh <- bns.clean_2 %>% 
   filter(weighting > .5) %>% # filter only thos weighte above 50%
-  group_by(household_ID, commodity) %>% 
+  group_by(household_ID, item) %>% 
   summarize(village = village,
             have_now = sum(possess == 'yes'),
             weighting = weighting,
@@ -73,29 +72,38 @@ bns.summary.hh <- bns.clean_2 %>%
 # calculate the well-being index for each household
 bns.wellbeing <- bns.summary.hh %>% 
   summarize(village = village,
-            commodity = commodity,
+            item = item,
             maximum_score = sum(weighting, na.rm = TRUE),
             well_being_score_total = sum(well_being_score, na.rm = TRUE),
             well_being_index = well_being_score_total/maximum_score)
-print(bns.wellbeing)
 
-# overall well being index
-overall.index <- bns.wellbeing %>% 
+# well-being index for each household
+bns.wellbeing.hh <- bns.wellbeing %>% 
+  group_by(household_ID, village) %>% 
+  summarise(well_being_index = mean(well_being_index))
+
+# well-being index overall
+wellbeing.index.overall <- bns.wellbeing.hh %>%
   ungroup() %>% 
-  summarise(total_index = mean(well_being_index))
+  summarise(overal_index = mean(well_being_index))
+print(wellbeing.index.overall)
 
-# well being index per village
-village.index <- bns.wellbeing %>% 
+# well-being index per village
+wellbeing.index.village <- bns.wellbeing.hh %>% 
   group_by(village) %>% 
-  summarise(village_index = mean(well_being_index))
+  summarise((village_index = mean(well_being_index)))
+print(wellbeing.index.village)
 
 # BNS summary
-bns.stats <- merge(village.index, overall.index)
+bns.stats <- merge(wellbeing.index.village, wellbeing.index.overall)
+print(bns.stats)
 
 # Choose a file path and name for your Excel file
 excel_file_1 <- "index_results.xlsx"
 
 excel_file_2 <- "bns_wellbeing_scores.xlsx"
+
+excel_file_3 <- "household_index.xlsx"
 
 # Create a new Excel workbook
 wb <- createWorkbook()
@@ -105,14 +113,14 @@ addWorksheet(wb, "index_results")
 
 addWorksheet(wb, "bns_wellbeing_scores")
 
+addWorksheet(wb, "household_index")
 
 # Write your data to the worksheet
 writeData(wb, "index_results", bns.stats)
 
 writeData(wb, "bns_wellbeing_scores", bns.summary.hh)
 
+writeData(wb, "household_index", bns.wellbeing.hh)
+
 # Save the workbook to an Excel file
 saveWorkbook(wb, "ke_BNS_2023.xlsx")
-
-# # Print a message indicating successful export
-# cat("Results exported to", excel_file, "\n")
