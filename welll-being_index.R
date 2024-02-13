@@ -4,7 +4,7 @@ pacman::p_load(tidyverse, readxl, magrittr, openxlsx)
 
 # import data -------------------------------------------------------------
 
-bns <- read_excel("ke_BNS_survey_NEW_-_all_versions_-_False_-_2024-02-06-08-39-40.xlsx") %>% 
+bns <- read_excel("G:/My Drive/Data/BAF/BNS/ke_BNS_analysis_2023/ke_BNS_survey_NEW_-_all_versions_-_False_-_2024-02-06-08-39-40.xlsx") %>% 
   rename(household_ID = "_id")
 
 # remove 'bns_matrix_' from column names
