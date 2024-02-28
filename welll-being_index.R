@@ -62,7 +62,7 @@ bns.clean_2 <- merge(bns.clean, bns.clean_1, by = "item") %>%
 
 # calculate the well-being score for each commodity for each household
 bns.summary.hh <- bns.clean_2 %>% 
-  filter(weighting > .5) %>% # filter only thos weighte above 50%
+  filter(weighting > .5) %>% # filter only those weighte above 50%
   group_by(household_ID, item) %>% 
   summarize(village = village,
             have_now = sum(possess == 'yes'),
